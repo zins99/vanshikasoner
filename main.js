@@ -139,7 +139,7 @@
     var isScattered = p < 1;
     if (isScattered !== scattered) {
       scattered = isScattered;
-      if (work) work.classList.toggle('is-scattered', isScattered);
+      if (work) work.style.willChange = isScattered ? 'transform' : 'auto';
     }
     for (var i = 0; i < cards.length; i++) {
       var cfg = scatter[i % scatter.length];
@@ -220,8 +220,24 @@
      can decide their images are off-screen and never decode them — the scatter
      then shows empty plates. Force the decode up front. */
   function warmImages() {
+    var jobs = [];
     Array.prototype.forEach.call(document.querySelectorAll('.card img'), function (im) {
-      if (im.decode) { im.decode().catch(function () {}); }
+      if (im.decode) { jobs.push(im.decode().catch(function () {})); }
+    });
+    if (jobs.length && window.Promise) { Promise.all(jobs).then(kickRaster); }
+  }
+
+  /* Creating the compositing layer up front is not enough on its own: Chrome
+     keeps the first, culled rasterisation. Dropping and re-adding the hint a
+     frame later forces a fresh raster that includes the off-screen cards. */
+  function kickRaster() {
+    if (!work) return;
+    work.style.willChange = 'auto';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        work.style.willChange = 'transform';
+        scattered = null;
+      });
     });
   }
 
@@ -229,7 +245,8 @@
   function init() {
     reveals();
     warmImages();
-    window.addEventListener('load', warmImages);
+    window.addEventListener('load', function () { warmImages(); setTimeout(kickRaster, 250); });
+    setTimeout(kickRaster, 900);
 
     if (reduced) {
       measure();
