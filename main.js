@@ -57,7 +57,8 @@
   var vw = 0, vh = 0, base = [], scatter = SCATTER_WIDE;
   var settleEnd = 1, inkStart = 1, inkEnd = 2, docSpan = 1;
   var current = 0, mx = 0, my = 0, cmx = 0, cmy = 0;
-  var navHidden = false;
+  var navHidden = false, scattered = null;
+  var work = document.getElementById('work');
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -134,6 +135,12 @@
   function paintCards(y, now) {
     var p = clamp(y / settleEnd, 0, 1);
     var t = (now || 0) / 1000;
+
+    var isScattered = p < 1;
+    if (isScattered !== scattered) {
+      scattered = isScattered;
+      if (work) work.classList.toggle('is-scattered', isScattered);
+    }
     for (var i = 0; i < cards.length; i++) {
       var cfg = scatter[i % scatter.length];
       var b = base[i];
