@@ -263,17 +263,18 @@
      invalidation) a few times over the first seconds settles it. */
   function warmImages() {
     Array.prototype.forEach.call(document.querySelectorAll('.card img'), function (im) {
-      if (im.decode) {
-        im.decode().then(function () {
-          im.style.opacity = '0.999';
-          requestAnimationFrame(function () { im.style.opacity = ''; });
-        }).catch(function () {});
-      }
+      /* Re-assigning the (cached) source forces a content invalidation. A
+         transform-only change never repaints content, so a card whose image
+         finished decoding after its first paint can otherwise stay an empty
+         plate for the whole session. */
+      var src = im.getAttribute('src');
+      if (src) { im.setAttribute('src', src); }
+      if (im.decode) { im.decode().catch(function () {}); }
     });
   }
 
   function scheduleWarm() {
-    [0, 250, 800, 1800, 3500].forEach(function (d) { setTimeout(warmImages, d); });
+    [0, 400, 1200, 2500].forEach(function (d) { setTimeout(warmImages, d); });
   }
 
   /* ---------- init ---------- */

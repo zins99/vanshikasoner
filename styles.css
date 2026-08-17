@@ -170,8 +170,8 @@ a{color:inherit;text-decoration:none}
   position:relative;
   max-width:258px;
   aspect-ratio:9/19.5;
-  border-radius:clamp(20px,2.1vw,34px);
-  padding:clamp(4px,.5vw,8px);
+  border-radius:13% / 6%;
+  padding:3.1%;
   background:linear-gradient(150deg,#4a4a50 0%,#17171a 34%,#0e0e10 62%,#3a3a40 100%);
   box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.06) inset;
   transition:transform .7s var(--ease);
@@ -179,13 +179,13 @@ a{color:inherit;text-decoration:none}
 .card:hover .phone{transform:translateY(-6px)}
 .phone-screen{
   position:relative;height:100%;width:100%;overflow:hidden;
-  border-radius:calc(clamp(20px,2.1vw,34px) - clamp(4px,.5vw,8px) + 1px);
+  border-radius:11% / 5.2%;
   background:#000;
 }
 .phone-screen img{width:100%;height:100%;object-fit:cover}
 .island{
-  position:absolute;top:clamp(8px,.95vw,15px);left:50%;transform:translateX(-50%);
-  width:31%;height:clamp(9px,1.05vw,17px);border-radius:99px;
+  position:absolute;top:5.4%;left:50%;transform:translateX(-50%);
+  width:29%;height:2.9%;border-radius:99px;
   background:#08080a;z-index:2;
 }
 /* side buttons */
