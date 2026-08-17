@@ -15,6 +15,7 @@
   var root = document.documentElement;
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
   var inners = cards.map(function (c) { return c.querySelector('.card-inner'); });
+  var metas = cards.map(function (c) { return c.querySelector('.meta'); });
   var pinned = cards.map(function () { return false; });
   var contact = document.getElementById('contact');
   var nav = document.getElementById('nav');
@@ -89,6 +90,7 @@
     if (!pinned[i]) return;
     var s = inners[i].style;
     s.position = ''; s.left = ''; s.top = ''; s.width = ''; s.zIndex = ''; s.transform = '';
+    if (metas[i]) { metas[i].style.transform = ''; metas[i].style.opacity = ''; }
     pinned[i] = false;
   }
   function pin(i, w) {
@@ -174,6 +176,7 @@
       if (inv < 0.0008) { release(i); continue; }
       pin(i, b.w);
 
+
       /* rest position in viewport space — exactly where the grid puts it */
       var restX = b.left - sx, restY = b.top - sy;
       var toX = vw * cfg.x, toY = vh * cfg.y;
@@ -182,14 +185,26 @@
       var x = restX + (toX - restX) * inv + cmx * cfg.d * 26 * inv;
       var yy = restY + (toY - restY) * inv + cmy * cfg.d * 18 * inv +
                Math.sin(t * 0.62 + i * 1.31) * 11 * fl;
-
-      var sc = 1 + ((vw * cfg.w) / b.w - 1) * inv;
       var rot = cfg.r * inv + Math.sin(t * 0.47 + i * 0.83) * 0.55 * fl;
 
+      /* Size the card by width rather than a scale() transform. A scaled-down
+         transform makes Chrome defer the image raster — and since a transform
+         change never invalidates content, the card can stay an empty plate.
+         Laying the image out small is an ordinary downscale it always draws. */
+      var kw = b.w + (vw * cfg.w - b.w) * inv;
       var s = inners[i].style;
+      s.width = kw.toFixed(1) + 'px';
       s.transform = 'translate(' + x.toFixed(2) + 'px,' + yy.toFixed(2) + 'px) rotate(' +
-        rot.toFixed(3) + 'deg) scale(' + sc.toFixed(4) + ')';
+        rot.toFixed(3) + 'deg)';
       s.zIndex = String(12 - (i % 12));
+
+      /* captions ride the same shrink and fade in as the card lands */
+      if (metas[i]) {
+        var ms = metas[i].style;
+        ms.transformOrigin = '0 0';
+        ms.transform = 'scale(' + (kw / b.w).toFixed(4) + ')';
+        ms.opacity = clamp(pi * 1.9 - 0.9, 0, 1).toFixed(3);
+      }
     }
   }
 
