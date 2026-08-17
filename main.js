@@ -131,8 +131,9 @@
     root.style.setProperty('--shadow', '0 30px 70px -30px rgba(0,0,0,' + (0.18 + 0.62 * sh).toFixed(3) + ')');
   }
 
-  function paintCards(y) {
+  function paintCards(y, now) {
     var p = clamp(y / settleEnd, 0, 1);
+    var t = (now || 0) / 1000;
     for (var i = 0; i < cards.length; i++) {
       var cfg = scatter[i % scatter.length];
       var b = base[i];
@@ -147,10 +148,14 @@
       var tx = (vw * cfg.x - b.left) * inv + cmx * cfg.d * 26 * inv;
       var ty = (vh * cfg.y - b.top) * inv + cmy * cfg.d * 18 * inv;
 
+      /* idle float, strongest while scattered and gone once settled */
+      var fl = reduced ? 0 : inv;
+      ty += Math.sin(t * 0.62 + i * 1.31) * 11 * fl;
+      var rot = cfg.r * inv + Math.sin(t * 0.47 + i * 0.83) * 0.55 * fl;
+
       cards[i].style.transform =
         'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) rotate(' +
-        (cfg.r * inv).toFixed(2) + 'deg) scale(' + sc.toFixed(4) + ')';
-      cards[i].style.setProperty('--drift', inv.toFixed(3));
+        rot.toFixed(3) + 'deg) scale(' + sc.toFixed(4) + ')';
       cards[i].style.zIndex = String(12 - (i % 12));
     }
   }
@@ -169,7 +174,7 @@
   }
 
   /* ---------- loop ---------- */
-  function frame() {
+  function frame(now) {
     var t = window.pageYOffset;
     current += (t - current) * 0.14;
     cmx += (mx - cmx) * 0.06;
@@ -177,14 +182,14 @@
     if (Math.abs(t - current) < 0.15) current = t;
 
     paintTheme(current);
-    paintCards(current);
+    paintCards(current, now);
     paintChrome(t);
 
     requestAnimationFrame(frame);
   }
 
   function settleAll() {
-    cards.forEach(function (c) { c.style.transform = 'none'; c.style.setProperty('--drift', '0'); });
+    cards.forEach(function (c) { c.style.transform = 'none'; });
     paintTheme(window.pageYOffset);
     paintChrome(window.pageYOffset);
   }
@@ -232,7 +237,7 @@
     measure();
     current = window.pageYOffset;
     paintTheme(current);
-    paintCards(current);
+    paintCards(current, 0);
     paintChrome(current);
     requestAnimationFrame(frame);
 
@@ -244,7 +249,7 @@
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { measure(); paintCards(current); paintTheme(current); }, 120);
+      rt = setTimeout(function () { measure(); paintCards(current, 0); paintTheme(current); }, 120);
     });
 
     window.addEventListener('load', function () { measure(); });

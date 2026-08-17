@@ -142,14 +142,11 @@ a{color:inherit;text-decoration:none}
 .card--web:nth-of-type(even){margin-top:clamp(18px,3.2vw,56px)}
 .card--app{margin-top:clamp(10px,2vw,34px)}
 
+/* The float is driven from the same rAF loop as the scatter (see main.js).
+   A CSS transform animation here would promote each card to its own
+   compositor layer, and because the cards' layout position sits far below the
+   hero, Chrome then skips rasterising their images entirely. */
 .card{transform-origin:0 0}
-.card-inner{animation:drift 9s ease-in-out infinite}
-.card:nth-child(2n) .card-inner{animation-duration:11s;animation-delay:-3s}
-.card:nth-child(3n) .card-inner{animation-duration:12.5s;animation-delay:-6s}
-@keyframes drift{
-  0%,100%{transform:translateY(0) rotate(0deg)}
-  50%{transform:translateY(calc(var(--drift,0) * -14px)) rotate(calc(var(--drift,0) * .5deg))}
-}
 
 /* desktop shot */
 .shot{
@@ -276,6 +273,6 @@ a{color:inherit;text-decoration:none}
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .card-inner,.arrow,.dot{animation:none!important}
+  .arrow,.dot{animation:none!important}
   .reveal{opacity:1;transform:none;transition:none}
 }
