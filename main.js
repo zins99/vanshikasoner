@@ -1,6 +1,6 @@
 /* Vanshika Soner — portfolio
  * Scroll engine: scattered cards settle into the grid while the palette
- * inverts dark -> light -> ink. No dependencies.
+ * inverts dark -> warm -> light -> ink. No dependencies.
  */
 (function () {
   'use strict';
@@ -8,6 +8,8 @@
   var root = document.documentElement;
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
   var contact = document.getElementById('contact');
+  var nav = document.getElementById('nav');
+  var progress = document.getElementById('progress');
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- palettes ---------- */
@@ -17,34 +19,45 @@
   /* the inversion travels through a warm mid-tone instead of dead grey */
   var WARM  = { bg: [58, 43, 36],    surface: [66, 50, 42] };
 
-  /* ---------- scatter layouts (x,y = fraction of viewport, r = deg, s = scale) ---------- */
+  /* ---------- scatter layouts ----------
+     x, y  : position of the card's top-left as a fraction of the viewport
+     r     : rotation in degrees
+     w     : target on-screen width as a fraction of viewport width
+     d     : pointer-parallax depth                                        */
   var SCATTER_WIDE = [
-    { x: 0.455, y: 0.055, r: -8, s: 0.26, d: 1.0 },
-    { x: 0.700, y: 0.05, r: 5,   s: 0.32, d: 0.6 },
-    { x: 0.860, y: 0.35, r: -6,  s: 0.26, d: 1.3 },
-    { x: 0.625, y: 0.63, r: 8,   s: 0.30, d: 0.8 },
-    { x: 0.335, y: 0.04, r: 3,   s: 0.22, d: 1.5 },
-    { x: 0.800, y: 0.88, r: -10, s: 0.28, d: 0.5 },
-    { x: 0.175, y: 0.90, r: 6,   s: 0.25, d: 1.1 },
-    { x: 0.470, y: 0.92, r: -4,  s: 0.23, d: 0.9 }
+    { x: 0.060, y: 0.090, r: -8, w: 0.115, d: 1.0 },  /* 01 increase  */
+    { x: 0.300, y: 0.100, r: 6,  w: 0.125, d: 0.6 },  /* 02 lithic    */
+    { x: 0.570, y: 0.090, r: -6, w: 0.062, d: 1.3 },  /* 03 copilot   */
+    { x: 0.700, y: 0.120, r: 5,  w: 0.055, d: 1.5 },  /* 04 kudos     */
+    { x: 0.820, y: 0.085, r: -6, w: 0.105, d: 1.2 },  /* 05 depot     */
+    { x: 0.700, y: 0.400, r: 8,  w: 0.120, d: 0.8 },  /* 06 numeric   */
+    { x: 0.900, y: 0.620, r: -8, w: 0.058, d: 1.4 },  /* 07 curtsy    */
+    { x: -0.015, y: 0.600, r: 7, w: 0.060, d: 0.7 },  /* 08 rosebud   */
+    { x: 0.050, y: 0.745, r: 6,  w: 0.110, d: 1.1 },  /* 09 method    */
+    { x: 0.330, y: 0.795, r: -4, w: 0.100, d: 0.9 },  /* 10 middesk   */
+    { x: 0.550, y: 0.755, r: 5,  w: 0.095, d: 0.5 },  /* 11 mercoa    */
+    { x: 0.780, y: 0.810, r: -7, w: 0.105, d: 1.0 }   /* 12 tennr     */
   ];
   var SCATTER_NARROW = [
-    { x: 0.03, y: 0.07, r: -7, s: 0.34, d: 1.0 },
-    { x: 0.60, y: 0.03, r: 6,  s: 0.30, d: 0.7 },
-    { x: 0.68, y: 0.30, r: -5, s: 0.28, d: 1.2 },
-    { x: 0.05, y: 0.72, r: 7,  s: 0.30, d: 0.9 },
-    { x: 0.55, y: 0.79, r: -8, s: 0.26, d: 1.4 },
-    { x: 0.44, y: 0.92, r: 4,  s: 0.24, d: 0.6 },
-    { x: 0.62, y: 0.16, r: 9,  s: 0.22, d: 1.1 },
-    { x: 0.06, y: 0.23, r: -3, s: 0.20, d: 0.8 }
+    { x: 0.030, y: 0.085, r: -7, w: 0.34, d: 1.0 },
+    { x: 0.550, y: 0.095, r: 6,  w: 0.36, d: 0.7 },
+    { x: 0.050, y: 0.655, r: -5, w: 0.17, d: 1.3 },
+    { x: 0.270, y: 0.700, r: 6,  w: 0.15, d: 1.5 },
+    { x: 0.600, y: 0.270, r: -4, w: 0.30, d: 1.2 },
+    { x: 0.020, y: 0.245, r: 7,  w: 0.32, d: 0.8 },
+    { x: 0.500, y: 0.645, r: -7, w: 0.16, d: 1.4 },
+    { x: 0.740, y: 0.700, r: 5,  w: 0.14, d: 0.6 },
+    { x: 0.300, y: 0.860, r: -3, w: 0.28, d: 1.1 },
+    { x: 0.630, y: 0.875, r: 4,  w: 0.26, d: 0.9 },
+    { x: 0.420, y: 0.930, r: 6,  w: 0.26, d: 0.5 },
+    { x: 0.340, y: 0.275, r: -5, w: 0.24, d: 1.0 }
   ];
 
   /* ---------- state ---------- */
   var vw = 0, vh = 0, base = [], scatter = SCATTER_WIDE;
-  var settleEnd = 1, inkStart = 1, inkEnd = 2;
-  var target = 0, current = 0;      // damped scroll position
-  var mx = 0, my = 0, cmx = 0, cmy = 0;
-  var ticking = true;
+  var settleEnd = 1, inkStart = 1, inkEnd = 2, docSpan = 1;
+  var current = 0, mx = 0, my = 0, cmx = 0, cmy = 0;
+  var navHidden = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -59,38 +72,37 @@
                     Math.round(lerp(a[2], b[2], t)) + ')';
   }
   function rgba(c, alpha) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + alpha + ')'; }
+  function via(a, mid, b, t) {
+    return t < 0.5 ? mixRGB(a, mid, t * 2) : mixRGB(mid, b, (t - 0.5) * 2);
+  }
 
   /* ---------- measure ---------- */
   function measure() {
     vw = window.innerWidth;
     vh = window.innerHeight;
-    scatter = vw < 860 ? SCATTER_NARROW : SCATTER_WIDE;
+    scatter = vw < 1080 ? SCATTER_NARROW : SCATTER_WIDE;
 
     var sy = window.pageYOffset;
     cards.forEach(function (c) { c.style.transform = 'none'; });
-    // force layout once, then read
     void document.body.offsetHeight;
     base = cards.map(function (c) {
       var r = c.getBoundingClientRect();
-      return { left: r.left + window.pageXOffset, top: r.top + sy };
+      return { left: r.left + window.pageXOffset, top: r.top + sy, w: r.width || 1 };
     });
 
     settleEnd = Math.max(1, vh * 0.95);
-    var cRect = contact.getBoundingClientRect();
-    var contactTop = cRect.top + sy;
-    inkStart = Math.max(settleEnd + 1, contactTop - vh * 0.75);
-    inkEnd = contactTop - vh * 0.1;
-    if (inkEnd <= inkStart) inkEnd = inkStart + vh * 0.5;
+    docSpan = Math.max(1, document.body.scrollHeight - vh);
+
+    /* The ink phase has to finish inside the scrollable range — the contact
+       section is last, so anchoring purely to its offset can leave the page
+       stranded mid-transition at the bottom of the document. */
+    var contactTop = contact.getBoundingClientRect().top + sy;
+    inkEnd = Math.min(contactTop - vh * 0.35, docSpan - vh * 0.05);
+    inkStart = Math.max(settleEnd + 1, inkEnd - vh * 0.9);
+    if (inkEnd <= inkStart) inkEnd = inkStart + vh * 0.4;
   }
 
   /* ---------- paint ---------- */
-  /* Three-point colour path (dark -> warm -> light) so the page never parks in
-     a dead grey, and a deliberately snappier curve for type so the text flips
-     legibility in a short window rather than fading through the background. */
-  function via(a, mid, b, t) {
-    return t < 0.5 ? mixRGB(a, mid, t * 2) : mixRGB(mid, b, (t - 0.5) * 2);
-  }
-
   function paintTheme(y) {
     var from, to, tbg, tfg, S = settleEnd;
     if (y < inkStart) {
@@ -126,24 +138,33 @@
       var b = base[i];
       if (!b) continue;
 
-      var pi = easeOut(clamp(p * 1.16 - (i % 4) * 0.035, 0, 1));
+      var pi = easeOut(clamp(p * 1.16 - (i % 4) * 0.03, 0, 1));
       var inv = 1 - pi;
 
-      var tx = (vw * cfg.x - b.left) * inv;
-      var ty = (vh * cfg.y - b.top) * inv;
+      var target = (vw * cfg.w) / b.w;          /* scale that hits the wanted on-screen width */
+      var sc = 1 + (target - 1) * inv;
 
-      // pointer parallax while floating
-      tx += cmx * cfg.d * 26 * inv;
-      ty += cmy * cfg.d * 18 * inv;
-
-      var rot = cfg.r * inv;
-      var sc = 1 + (cfg.s - 1) * inv;
+      var tx = (vw * cfg.x - b.left) * inv + cmx * cfg.d * 26 * inv;
+      var ty = (vh * cfg.y - b.top) * inv + cmy * cfg.d * 18 * inv;
 
       cards[i].style.transform =
         'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) rotate(' +
-        rot.toFixed(2) + 'deg) scale(' + sc.toFixed(4) + ')';
+        (cfg.r * inv).toFixed(2) + 'deg) scale(' + sc.toFixed(4) + ')';
       cards[i].style.setProperty('--drift', inv.toFixed(3));
-      cards[i].style.zIndex = String(10 - (i % 8));
+      cards[i].style.zIndex = String(12 - (i % 12));
+    }
+  }
+
+  function paintChrome(y) {
+    /* the header is for the first screen only */
+    var shouldHide = y > 30;
+    if (shouldHide !== navHidden) {
+      navHidden = shouldHide;
+      nav.classList.toggle('is-hidden', shouldHide);
+    }
+    if (progress) {
+      progress.style.transform = 'scaleX(' + clamp(y / docSpan, 0, 1).toFixed(4) + ')';
+      progress.style.opacity = y > 30 ? '.28' : '0';
     }
   }
 
@@ -157,14 +178,15 @@
 
     paintTheme(current);
     paintCards(current);
+    paintChrome(t);
 
     requestAnimationFrame(frame);
   }
 
-  /* ---------- static fallback ---------- */
   function settleAll() {
     cards.forEach(function (c) { c.style.transform = 'none'; c.style.setProperty('--drift', '0'); });
     paintTheme(window.pageYOffset);
+    paintChrome(window.pageYOffset);
   }
 
   /* ---------- reveals ---------- */
@@ -189,7 +211,9 @@
     if (reduced) {
       measure();
       settleAll();
-      window.addEventListener('scroll', function () { paintTheme(window.pageYOffset); }, { passive: true });
+      window.addEventListener('scroll', function () {
+        paintTheme(window.pageYOffset); paintChrome(window.pageYOffset);
+      }, { passive: true });
       window.addEventListener('resize', function () { measure(); settleAll(); });
       return;
     }
@@ -198,6 +222,7 @@
     current = window.pageYOffset;
     paintTheme(current);
     paintCards(current);
+    paintChrome(current);
     requestAnimationFrame(frame);
 
     window.addEventListener('mousemove', function (e) {
@@ -211,7 +236,6 @@
       rt = setTimeout(function () { measure(); paintCards(current); paintTheme(current); }, 120);
     });
 
-    // re-measure once fonts and images have settled (layout can shift)
     window.addEventListener('load', function () { measure(); });
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () { measure(); });
