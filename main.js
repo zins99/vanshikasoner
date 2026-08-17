@@ -1,12 +1,21 @@
 /* Vanshika Soner — portfolio
  * Scroll engine: scattered cards settle into the grid while the palette
  * inverts dark -> warm -> light -> ink. No dependencies.
+ *
+ * Note on the scatter: the cards are pinned (position:fixed) while they float
+ * in the hero and released into normal flow the moment they land. Translating
+ * them thousands of pixels with a transform looks equivalent, but Chrome then
+ * culls their images — the layout position sits far below the viewport — and
+ * the hero renders as a field of empty plates. Pinning keeps them genuinely
+ * on-screen, so they always rasterise.
  */
 (function () {
   'use strict';
 
   var root = document.documentElement;
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var inners = cards.map(function (c) { return c.querySelector('.card-inner'); });
+  var pinned = cards.map(function () { return false; });
   var contact = document.getElementById('contact');
   var nav = document.getElementById('nav');
   var progress = document.getElementById('progress');
@@ -57,8 +66,7 @@
   var vw = 0, vh = 0, base = [], scatter = SCATTER_WIDE;
   var settleEnd = 1, inkStart = 1, inkEnd = 2, docSpan = 1;
   var current = 0, mx = 0, my = 0, cmx = 0, cmy = 0;
-  var navHidden = false, scattered = null;
-  var work = document.getElementById('work');
+  var navHidden = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -77,19 +85,37 @@
     return t < 0.5 ? mixRGB(a, mid, t * 2) : mixRGB(mid, b, (t - 0.5) * 2);
   }
 
+  function release(i) {
+    if (!pinned[i]) return;
+    var s = inners[i].style;
+    s.position = ''; s.left = ''; s.top = ''; s.width = ''; s.zIndex = ''; s.transform = '';
+    pinned[i] = false;
+  }
+  function pin(i, w) {
+    if (pinned[i]) return;
+    var s = inners[i].style;
+    s.position = 'fixed'; s.left = '0px'; s.top = '0px'; s.width = w + 'px';
+    pinned[i] = true;
+  }
+
   /* ---------- measure ---------- */
   function measure() {
     vw = window.innerWidth;
     vh = window.innerHeight;
     scatter = vw < 1080 ? SCATTER_NARROW : SCATTER_WIDE;
 
-    var sy = window.pageYOffset;
-    cards.forEach(function (c) { c.style.transform = 'none'; });
+    /* read the natural grid geometry with everything released */
+    var i;
+    for (i = 0; i < cards.length; i++) { release(i); cards[i].style.height = ''; }
     void document.body.offsetHeight;
+
+    var sx = window.pageXOffset, sy = window.pageYOffset;
     base = cards.map(function (c) {
       var r = c.getBoundingClientRect();
-      return { left: r.left + window.pageXOffset, top: r.top + sy, w: r.width || 1 };
+      return { left: r.left + sx, top: r.top + sy, w: r.width || 1, h: r.height || 1 };
     });
+    /* freeze the row heights so pinning a card never collapses the grid */
+    for (i = 0; i < cards.length; i++) { cards[i].style.height = base[i].h + 'px'; }
 
     settleEnd = Math.max(1, vh * 0.95);
     docSpan = Math.max(1, document.body.scrollHeight - vh);
@@ -135,12 +161,8 @@
   function paintCards(y, now) {
     var p = clamp(y / settleEnd, 0, 1);
     var t = (now || 0) / 1000;
+    var sx = window.pageXOffset, sy = window.pageYOffset;
 
-    var isScattered = p < 1;
-    if (isScattered !== scattered) {
-      scattered = isScattered;
-      if (work) work.style.willChange = isScattered ? 'transform' : 'auto';
-    }
     for (var i = 0; i < cards.length; i++) {
       var cfg = scatter[i % scatter.length];
       var b = base[i];
@@ -149,21 +171,25 @@
       var pi = easeOut(clamp(p * 1.16 - (i % 4) * 0.03, 0, 1));
       var inv = 1 - pi;
 
-      var target = (vw * cfg.w) / b.w;          /* scale that hits the wanted on-screen width */
-      var sc = 1 + (target - 1) * inv;
+      if (inv < 0.0008) { release(i); continue; }
+      pin(i, b.w);
 
-      var tx = (vw * cfg.x - b.left) * inv + cmx * cfg.d * 26 * inv;
-      var ty = (vh * cfg.y - b.top) * inv + cmy * cfg.d * 18 * inv;
+      /* rest position in viewport space — exactly where the grid puts it */
+      var restX = b.left - sx, restY = b.top - sy;
+      var toX = vw * cfg.x, toY = vh * cfg.y;
 
-      /* idle float, strongest while scattered and gone once settled */
       var fl = reduced ? 0 : inv;
-      ty += Math.sin(t * 0.62 + i * 1.31) * 11 * fl;
+      var x = restX + (toX - restX) * inv + cmx * cfg.d * 26 * inv;
+      var yy = restY + (toY - restY) * inv + cmy * cfg.d * 18 * inv +
+               Math.sin(t * 0.62 + i * 1.31) * 11 * fl;
+
+      var sc = 1 + ((vw * cfg.w) / b.w - 1) * inv;
       var rot = cfg.r * inv + Math.sin(t * 0.47 + i * 0.83) * 0.55 * fl;
 
-      cards[i].style.transform =
-        'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) rotate(' +
+      var s = inners[i].style;
+      s.transform = 'translate(' + x.toFixed(2) + 'px,' + yy.toFixed(2) + 'px) rotate(' +
         rot.toFixed(3) + 'deg) scale(' + sc.toFixed(4) + ')';
-      cards[i].style.zIndex = String(12 - (i % 12));
+      s.zIndex = String(12 - (i % 12));
     }
   }
 
@@ -196,7 +222,7 @@
   }
 
   function settleAll() {
-    cards.forEach(function (c) { c.style.transform = 'none'; });
+    for (var i = 0; i < cards.length; i++) { release(i); }
     paintTheme(window.pageYOffset);
     paintChrome(window.pageYOffset);
   }
@@ -216,28 +242,9 @@
     Array.prototype.forEach.call(els, function (e) { io.observe(e); });
   }
 
-  /* Cards live in the grid but are transformed up into the hero, so the browser
-     can decide their images are off-screen and never decode them — the scatter
-     then shows empty plates. Force the decode up front. */
   function warmImages() {
-    var jobs = [];
     Array.prototype.forEach.call(document.querySelectorAll('.card img'), function (im) {
-      if (im.decode) { jobs.push(im.decode().catch(function () {})); }
-    });
-    if (jobs.length && window.Promise) { Promise.all(jobs).then(kickRaster); }
-  }
-
-  /* Creating the compositing layer up front is not enough on its own: Chrome
-     keeps the first, culled rasterisation. Dropping and re-adding the hint a
-     frame later forces a fresh raster that includes the off-screen cards. */
-  function kickRaster() {
-    if (!work) return;
-    work.style.willChange = 'auto';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        work.style.willChange = 'transform';
-        scattered = null;
-      });
+      if (im.decode) { im.decode().catch(function () {}); }
     });
   }
 
@@ -245,8 +252,6 @@
   function init() {
     reveals();
     warmImages();
-    window.addEventListener('load', function () { warmImages(); setTimeout(kickRaster, 250); });
-    setTimeout(kickRaster, 900);
 
     if (reduced) {
       measure();
@@ -276,7 +281,7 @@
       rt = setTimeout(function () { measure(); paintCards(current, 0); paintTheme(current); }, 120);
     });
 
-    window.addEventListener('load', function () { measure(); });
+    window.addEventListener('load', function () { warmImages(); measure(); });
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () { measure(); });
     }
