@@ -148,7 +148,7 @@
       var ty = (vh * cfg.y - b.top) * inv + cmy * cfg.d * 18 * inv;
 
       cards[i].style.transform =
-        'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) rotate(' +
+        'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) rotate(' +
         (cfg.r * inv).toFixed(2) + 'deg) scale(' + sc.toFixed(4) + ')';
       cards[i].style.setProperty('--drift', inv.toFixed(3));
       cards[i].style.zIndex = String(12 - (i % 12));
@@ -204,9 +204,20 @@
     Array.prototype.forEach.call(els, function (e) { io.observe(e); });
   }
 
+  /* Cards live in the grid but are transformed up into the hero, so the browser
+     can decide their images are off-screen and never decode them — the scatter
+     then shows empty plates. Force the decode up front. */
+  function warmImages() {
+    Array.prototype.forEach.call(document.querySelectorAll('.card img'), function (im) {
+      if (im.decode) { im.decode().catch(function () {}); }
+    });
+  }
+
   /* ---------- init ---------- */
   function init() {
     reveals();
+    warmImages();
+    window.addEventListener('load', warmImages);
 
     if (reduced) {
       measure();

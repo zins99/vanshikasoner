@@ -142,13 +142,13 @@ a{color:inherit;text-decoration:none}
 .card--web:nth-of-type(even){margin-top:clamp(18px,3.2vw,56px)}
 .card--app{margin-top:clamp(10px,2vw,34px)}
 
-.card{transform-origin:0 0;will-change:transform}
-.card-inner{animation:drift 9s ease-in-out infinite;will-change:transform}
+.card{transform-origin:0 0}
+.card-inner{animation:drift 9s ease-in-out infinite}
 .card:nth-child(2n) .card-inner{animation-duration:11s;animation-delay:-3s}
 .card:nth-child(3n) .card-inner{animation-duration:12.5s;animation-delay:-6s}
 @keyframes drift{
-  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
-  50%{transform:translate3d(0,calc(var(--drift,0) * -14px),0) rotate(calc(var(--drift,0) * .5deg))}
+  0%,100%{transform:translateY(0) rotate(0deg)}
+  50%{transform:translateY(calc(var(--drift,0) * -14px)) rotate(calc(var(--drift,0) * .5deg))}
 }
 
 /* desktop shot */
