@@ -242,16 +242,29 @@
     Array.prototype.forEach.call(els, function (e) { io.observe(e); });
   }
 
+  /* Chrome defers the scaled decode of an image drawn at ~0.2x, and a
+     transform-only change never invalidates content — so a card can sit there
+     as an empty plate indefinitely. Forcing a decode (and a one-off content
+     invalidation) a few times over the first seconds settles it. */
   function warmImages() {
     Array.prototype.forEach.call(document.querySelectorAll('.card img'), function (im) {
-      if (im.decode) { im.decode().catch(function () {}); }
+      if (im.decode) {
+        im.decode().then(function () {
+          im.style.opacity = '0.999';
+          requestAnimationFrame(function () { im.style.opacity = ''; });
+        }).catch(function () {});
+      }
     });
+  }
+
+  function scheduleWarm() {
+    [0, 250, 800, 1800, 3500].forEach(function (d) { setTimeout(warmImages, d); });
   }
 
   /* ---------- init ---------- */
   function init() {
     reveals();
-    warmImages();
+    scheduleWarm();
 
     if (reduced) {
       measure();
@@ -281,7 +294,7 @@
       rt = setTimeout(function () { measure(); paintCards(current, 0); paintTheme(current); }, 120);
     });
 
-    window.addEventListener('load', function () { warmImages(); measure(); });
+    window.addEventListener('load', function () { scheduleWarm(); measure(); });
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () { measure(); });
     }
