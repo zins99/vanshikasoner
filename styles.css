@@ -152,7 +152,21 @@ a{color:inherit;text-decoration:none}
    compositor layer, and because the cards' layout position sits far below the
    hero, Chrome then skips rasterising their images entirely. */
 .card{position:relative}
-.card-inner{transform-origin:0 0}
+.card-inner{
+  transform-origin:0 0;
+  display:block;color:inherit;text-decoration:none;
+}
+.card-inner:focus-visible{outline:2px solid currentColor;outline-offset:8px;border-radius:14px}
+/* every card links out to the live product */
+.meta h3::after{
+  content:"↗";
+  font-family:"Inter",sans-serif;font-size:.46em;margin-left:.5em;
+  display:inline-block;vertical-align:.42em;opacity:.35;
+  transition:opacity .35s var(--ease),transform .35s var(--ease);
+}
+.card-inner:hover h3::after,.card-inner:focus-visible h3::after{
+  opacity:1;transform:translate(2px,-2px);
+}
 
 /* desktop shot */
 .shot{
