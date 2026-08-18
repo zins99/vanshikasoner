@@ -96,7 +96,7 @@
   function pin(i, w) {
     if (pinned[i]) return;
     var s = inners[i].style;
-    s.position = 'fixed'; s.left = '0px'; s.top = '0px'; s.width = w + 'px';
+    s.position = 'fixed'; s.width = w + 'px';
     pinned[i] = true;
   }
 
@@ -194,8 +194,12 @@
       var kw = b.w + (vw * cfg.w - b.w) * inv;
       var s = inners[i].style;
       s.width = kw.toFixed(1) + 'px';
-      s.transform = 'translate(' + x.toFixed(2) + 'px,' + yy.toFixed(2) + 'px) rotate(' +
-        rot.toFixed(3) + 'deg)';
+      /* left/top rather than a translate: layout properties repaint content
+         every frame, which is exactly what keeps the card images drawn. A
+         transform is composited without ever repainting what is inside. */
+      s.left = x.toFixed(1) + 'px';
+      s.top = yy.toFixed(1) + 'px';
+      s.transform = 'rotate(' + rot.toFixed(3) + 'deg)';
       s.zIndex = String(12 - (i % 12));
 
       /* captions ride the same shrink and fade in as the card lands */
